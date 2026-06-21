@@ -252,6 +252,53 @@ if uploaded_file is not None:
 else:
     st.info("👈 请从左侧上传患者数据文件（CSV格式），支持的特征列：age, systolic_bp, diastolic_bp, heart_rate, blood_sugar, bmi, cholesterol")
 
+# ========== 修改后的AI问答模块（自动读取密钥，用户无需输入） ==========
+st.divider()
+st.header("🤖 AI智能健康数据分析问答助手")
+st.markdown("💡 你可以提问：指标解读、聚类分析、三高改善、健康生活建议等问题")
+
+# 自动从Streamlit Secrets读取密钥
+try:
+    api_key = st.secrets["ZHIPU_API_KEY"]
+except KeyError:
+    st.warning("⚠️ 管理员未配置API Key，AI问答暂时无法使用")
+    api_key = None
+
+# 只有配置了密钥才显示问答框
+if api_key:
+    user_question = st.text_input("请输入你的问题：", placeholder="例如：BMI28如何减脂、高血压饮食建议、聚类结果怎么解读")
+
+    if st.button("提问") and user_question.strip():
+        with st.spinner("AI正在分析你的问题..."):
+            import requests
+            url = "https://open.bigmodel.cn/api/paas/v4/chat/completions"
+            headers = {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            }
+            # 固定AI角色，贴合你的心血管系统
+            system_prompt = """
+            你是心血管体检数据分析专业助手，严格遵守以下医学标准：
+            1. 高危阈值：年龄>60、收缩压≥140、舒张压≥90、空腹血糖≥126、BMI≥28、胆固醇≥240、心率>100；
+            2. 系统使用K-Means聚类自动划分患者风险群体，高风险=≥2项指标超标；
+            3. 回答简洁专业，分点给出生活改善方案，不做医疗诊断，只做健康科普；
+            4. 不要输出冗余内容，条理清晰。
+            """
+            payload = {
+                "model": "glm-4-flash",
+                "messages": [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_question}
+                ],
+                "temperature": 0.3
+            }
+            res = requests.post(url, headers=headers, json=payload)
+            if res.status_code == 200:
+                reply = res.json()["choices"][0]["message"]["content"]
+                st.success(f"🤖 AI回答：\n{reply}")
+            else:
+                st.error("AI调用失败，请稍后重试或联系管理员")
+# ======================================================================
 # 底部说明
 st.markdown("---")
 st.markdown("""

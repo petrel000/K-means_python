@@ -8,7 +8,22 @@ from sklearn.metrics import silhouette_score
 import matplotlib.pyplot as plt
 
 # 全局配置
-plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'Arial Unicode MS']
+import os
+import urllib.request
+from matplotlib import font_manager
+
+# 下载中文字体到临时目录（Streamlit Cloud 有网络权限）
+font_url = "https://github.com/googlefonts/noto-cjk/raw/main/Sans/OTF/SimplifiedChinese/NotoSansCJKsc-Regular.otf"
+font_path = "/tmp/NotoSansCJKsc-Regular.otf"
+
+if not os.path.exists(font_path):
+    try:
+        urllib.request.urlretrieve(font_url, font_path)
+        font_manager.fontManager.addfont(font_path)
+    except Exception:
+        pass  # 如果下载失败，使用备用字体
+
+plt.rcParams['font.sans-serif'] = ['Noto Sans CJK SC', 'DejaVu Sans', 'Liberation Sans', 'sans-serif']
 plt.rcParams['axes.unicode_minus'] = False
 st.set_page_config(
     page_title="患者心血管风险分群评估系统",
